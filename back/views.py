@@ -1,11 +1,8 @@
-import csv
-import math
-
 from flask import jsonify, request, send_from_directory
 from flask.views import MethodView
 from sqlalchemy import func
 
-from back.base import app, db
+from back.base import db
 from back.models import Frames
 
 

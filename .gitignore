@@ -87,6 +87,6 @@ crashlytics.properties
 crashlytics-build.properties
 fabric.properties
 .idea/httpRequests
-/static/node_modules/
+/client/node_modules/
 /dump.sql
 /back/photo/
