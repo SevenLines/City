@@ -1,7 +1,9 @@
 <template>
   <div class="app-wrapper">
     <div id="app">
-      <div id="toolbar"></div>
+      <div id="toolbar">
+        <h2>Иркутск 2018 &mdash; диагностика</h2>
+      </div>
       <div id="map" ref="map"></div>
     </div>
   </div>
@@ -122,7 +124,11 @@
   }
 
   #toolbar {
-    height: 50px;
+    padding: 1em;
+    h2 {
+      padding: 0;
+      margin: 0;
+    }
     border-bottom: 1px solid silver;
   }
 

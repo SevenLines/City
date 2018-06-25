@@ -29,3 +29,12 @@ class Video(db.Model):
     road_id = db.Column(db.Integer)
 
     frames = db.relationship('Frames', backref='video', lazy=True)
+
+
+class RoadQuality(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    road_id = db.Column(db.Integer, db.ForeignKey('roads.id'), nullable=True)
+    start = db.Column(db.Integer)
+    end = db.Column(db.Integer)
+    defects = db.Column(db.Text)
+    score = db.Column(db.Float)
