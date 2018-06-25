@@ -1,9 +1,9 @@
 from flask import jsonify, request, send_from_directory
 from flask.views import MethodView
-from sqlalchemy import func
+from sqlalchemy import func, and_
 
 from back.base import db
-from back.models import Frames
+from back.models import Frames, RoadQuality
 
 
 class SendPhotoView(MethodView):
@@ -50,10 +50,11 @@ class NearestFrameView(MethodView):
         lat = request.args['lat']
         lng = request.args['lng']
         video_id = request.args['video_id']
+        rq_id = request.args.get('rq_id')
 
-        frame = Frames.query.filter(Frames.video_id==video_id).join(
-
-        ).order_by(
+        if rq_id:
+            rq = RoadQuality.query.filter_by(id=rq_id).first()
+        frame = Frames.query.filter(Frames.video_id==video_id).order_by(
             func.st_distance(Frames.point, func.st_makepoint(lng, lat))
         )
 
@@ -62,6 +63,8 @@ class NearestFrameView(MethodView):
             'url': '/photo/{}/frame_{}.jpg'.format(frame.video_id, frame.id),
             'position': frame.l,
             'frame': frame.frame,
+            'defects': rq.defects if rq_id else 'дефекты отсутствуют',
+            'score': rq.score if rq_id else '5',
         })
 
 

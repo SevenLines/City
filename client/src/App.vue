@@ -83,7 +83,7 @@
               params: {
                 lat: e.latlng.lat,
                 lng: e.latlng.lng,
-                rq_id: e.rq_id,
+                rq_id: feature.properties.rq_id,
                 video_id: feature.properties.video_id
               }
             }).then(r => {
@@ -92,6 +92,8 @@
 <h2>${feature.properties.road_title}</h2>
 <h3>адрес: ${address}</h3>
 <img src="${r.data.url}">
+<div><strong>Оценка состояния дороги: ${r.data.score}</strong></div>
+<div>${r.data.defects}</div>
 `);
             })
 
