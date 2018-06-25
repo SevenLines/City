@@ -34,7 +34,7 @@
             let polyline = L.geoJSON(geoObject, {
               onEachFeature: this.onEachFeature.bind(this),
               style: {
-                'color': tinycolor.mix('#07b500', '#ff0071', k * 100).toString(),
+                'color': tinycolor.mix('#00e14b', '#ff0071', k * 100).toString(),
                 'weight': 10,
                 'opacity': 0.75
               }

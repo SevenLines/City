@@ -2,7 +2,7 @@ from flask import jsonify, request, send_from_directory
 from flask.views import MethodView
 from sqlalchemy import func, and_
 
-from back.base import db
+from back.base import db, cache
 from back.models import Frames, RoadQuality
 
 
@@ -12,6 +12,7 @@ class SendPhotoView(MethodView):
 
 
 class RoadView(MethodView):
+    @cache.cached(timeout=5000)
     def get(self, *args, **kwargs):
         result = db.engine.execute('''
 SELECT
