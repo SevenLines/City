@@ -15,7 +15,7 @@ class RoadView(MethodView):
     @cache.cached(timeout=5000)
     def get(self, *args, **kwargs):
         result = db.engine.execute('''
-SELECT
+SELECT 
   json_build_object(
       'type', 'Feature',
       'properties', json_build_object(
@@ -32,7 +32,7 @@ FROM frames f
   LEFT JOIN frames f2 ON f2.idx + 1 = f.idx and f.video_id = f2.video_id
   LEFT JOIN video v ON v.id = f.video_id
   LEFT JOIN roads r ON r.id = v.road_id
-  LEFT JOIN road_quality rq ON rq.road_id = v.road_id and f.l > rq.start and f.l < rq.end
+  LEFT JOIN road_quality rq ON rq.road_id = v.road_id and f.l >= rq.start and f.l <= rq.end
 WHERE f2.idx is not NULL
 GROUP BY LEAST(5, coalesce(score, 5)), defects, r.id, rq.start, rq.end, f.video_id, rq.id
         ''')
