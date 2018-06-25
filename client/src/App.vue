@@ -90,7 +90,7 @@
               }
             }).then(r => {
               let address = `${Math.floor(r.data.position / 1000)}+${r.data.position % 1000}`;
-              let road_title = this.roads_list[feature.properties.road_id];
+              let road_title = self.roads_list[feature.properties.road_id];
               self.popup.setContent(`
 <h2>${road_title}</h2>
 <h3>адрес: ${address}</h3>
