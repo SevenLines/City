@@ -3,7 +3,7 @@ from flask.views import MethodView
 from sqlalchemy import func, and_
 
 from back.base import db, cache
-from back.models import Frames, RoadQuality
+from back.models import Frames, RoadQuality, Roads
 
 
 class SendPhotoView(MethodView):
@@ -20,7 +20,7 @@ SELECT
       'type', 'Feature',
       'properties', json_build_object(
           'score', LEAST(5, coalesce(score, 5)),
-          'road_title', r.title,
+          'road_id', r.id,
           'rq_id', rq.id,
           'video_id', f.video_id,
           'start', rq.start,
@@ -34,15 +34,18 @@ FROM frames f
   LEFT JOIN roads r ON r.id = v.road_id
   LEFT JOIN road_quality rq ON rq.road_id = v.road_id and f.l > rq.start and f.l < rq.end
 WHERE f2.idx is not NULL
-GROUP BY LEAST(5, coalesce(score, 5)), defects, r.title, rq.start, rq.end, f.video_id, rq.id      
+GROUP BY LEAST(5, coalesce(score, 5)), defects, r.id, rq.start, rq.end, f.video_id, rq.id
         ''')
+
+        roads_list = {i.id: i.title for i in Roads.query.all()}
 
         out = []
         for i in result:
             out.append(i.data)
 
         return jsonify({
-            'roads': out
+            'roads': out,
+            'roads_list': roads_list,
         })
 
 

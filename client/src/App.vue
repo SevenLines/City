@@ -20,6 +20,7 @@
       return {
         map: null,
         roads: [],
+        roads_list: {},
         roadsLayer: null,
         marker: null,
         popup: null,
@@ -46,7 +47,8 @@
     },
     created () {
       axios.get('/api/road/').then(r => {
-        this.roads = r.data.roads
+        this.roads = r.data.roads;
+        this.roads_list = r.data.roads_list;
       })
     },
     mounted () {
@@ -87,9 +89,10 @@
                 video_id: feature.properties.video_id
               }
             }).then(r => {
-              let address = `${Math.floor(r.data.position / 1000)}+${r.data.position % 1000}`
+              let address = `${Math.floor(r.data.position / 1000)}+${r.data.position % 1000}`;
+              let road_title = roads_list[feature.properties.road_id];
               self.popup.setContent(`
-<h2>${feature.properties.road_title}</h2>
+<h2>${road_title}</h2>
 <h3>адрес: ${address}</h3>
 <img src="${r.data.url}">
 <div><strong>Оценка состояния дороги: ${r.data.score}</strong></div>

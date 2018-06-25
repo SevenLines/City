@@ -10,3 +10,4 @@ def deploy(c):
             c.run("ls")
             c.run("npm install")
             c.run("npm run build")
+        c.run("touch uwsgi.ini")
