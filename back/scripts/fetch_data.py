@@ -7,7 +7,7 @@ from multiprocessing.pool import Pool
 from subprocess import call
 
 from back.base import db, app
-from back.models import Frames, Video, RoadQuality
+from back.models import Frames, Video, RoadQuality, PointDefects
 
 
 def create_frame(frame):
@@ -131,8 +131,37 @@ def quality_info():
         db.session.commit()
 
 
+def load_point_defects():
+    files = glob.glob(r'd:\_MMK\_PYTHON\CityDiagnostics\out\json\*.json')
+    for f in files:
+        with open(f) as fl:
+            data = json.loads(fl.read())
+            road_id = list(data.keys())[0]
+            for q in data[road_id]['bad_wheels']:
+                pd = PointDefects(
+                    road_id=road_id,
+                    x=q['x'],
+                    y=q['y'],
+                    address=q['l'],
+                    type=q['type'],
+                    defects=q['defects'],
+                )
+                db.session.add(pd)
+            for q in data[road_id]['trails']:
+                t = PointDefects(
+                    road_id=road_id,
+                    x=q['x'],
+                    y=q['y'],
+                    address=q['start'],
+                    type=q['type'],
+                    defects=q['defect'],
+                )
+                db.session.add(t)
+        db.session.commit()
+
+
 if __name__ == '__main__':
-    quality_info()
+    load_point_defects()
     # video_ids = fill_frames()
     # if video_ids:
     #     create_frames(video_ids)

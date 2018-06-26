@@ -44,6 +44,34 @@ GROUP BY r.title, r.id, video_id
         })
 
 
+class PointDefectsView(MethodView):
+    def get(self, *args, **kwargs):
+        result = db.engine.execute("""
+SELECT
+  json_build_object(
+           'type', 'Feature',
+           'geometry', st_asgeojson(st_makepoint(
+                  st_x(origin) + x * -8.986642677244117e-06,
+                  st_y(origin) + y * -1.4655401709054041e-05)
+           )::json,
+           'properties', json_build_object(
+               'defects', defects,
+               'road_id', road_id,
+               'type', pd."type"
+           )
+       ) as data
+FROM point_defects pd
+LEFT JOIN roads r on pd.road_id = r.id
+        """)
+
+        out = []
+        for i in result:
+            out.append(i.data)
+
+        return jsonify({
+            'objects': out
+        })
+
 class NearestFrameView(MethodView):
     def get(self, *args, **kwargs):
         lat = request.args['lat']

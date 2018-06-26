@@ -38,3 +38,13 @@ class RoadQuality(db.Model):
     end = db.Column(db.Integer)
     defects = db.Column(db.Text)
     score = db.Column(db.Float)
+
+
+class PointDefects(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    road_id = db.Column(db.Integer, db.ForeignKey('roads.id'), nullable=True)
+    type = db.Column(db.Integer)
+    address = db.Column(db.Integer)
+    x = db.Column(db.Float)
+    y = db.Column(db.Float)
+    defects = db.Column(db.Text)
