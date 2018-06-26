@@ -5,21 +5,9 @@ from sqlalchemy import func, and_
 from back.base import db, cache
 from back.models import Frames, RoadQuality, Roads
 
-
-class SendPhotoView(MethodView):
-    def get(self, path, *args, **kwargs):
-        return send_from_directory('photo', path)
-
-
-class RoadView(MethodView):
-    @cache.memoize(5000)
-    def get(self, qmin, qmax, *args, **kwargs):
-        quality = (float(qmin), float(qmax))
-
-        if not quality:
-            quality = (1, 5)
-
-        result = db.engine.execute('''
+@cache.memoize(5000)
+def get_quality_info(qmin, qmax):
+    result = db.engine.execute('''
 SELECT 
   json_build_object(
       'type', 'Feature',
@@ -40,16 +28,27 @@ FROM frames f
   LEFT JOIN road_quality rq ON rq.road_id = v.road_id and f.l >= rq.start and f.l <= rq.end
 WHERE f2.idx is not NULL and LEAST(5, coalesce(score, 5)) between {} and {}
 GROUP BY LEAST(5, coalesce(score, 5)), defects, r.id, rq.start, rq.end, f.video_id, rq.id
-        '''.format(quality[0], quality[1]))
+        '''.format(qmin, qmax))
 
+    out = []
+    for i in result:
+        out.append(i.data)
+
+    return out
+
+
+class SendPhotoView(MethodView):
+    def get(self, path, *args, **kwargs):
+        return send_from_directory('photo', path)
+
+
+class RoadView(MethodView):
+    def get(self, qmin, qmax, *args, **kwargs):
         roads_list = {i.id: i.title for i in Roads.query.all()}
-
-        out = []
-        for i in result:
-            out.append(i.data)
+        quality_info = get_quality_info(float(qmin), float(qmax))
 
         return jsonify({
-            'roads': out,
+            'roads': quality_info,
             'roads_list': roads_list,
         })
 
