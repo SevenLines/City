@@ -12,8 +12,9 @@ class SendPhotoView(MethodView):
 
 
 class RoadView(MethodView):
-    def get(self, *args, **kwargs):
-        quality = list(map(str, map(float, request.args.getlist('quality[]'))))
+    @cache.memoize(5000)
+    def get(self, qmin, qmax, *args, **kwargs):
+        quality = (float(qmin), float(qmax))
 
         if not quality:
             quality = (1, 5)

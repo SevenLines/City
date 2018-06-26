@@ -205,11 +205,7 @@
     methods: {
       loadQuality: _.debounce(function () {
         this.loadingQuality = true;
-        axios.get('/api/road/', {
-          params: {
-            'quality': this.quality
-          }
-        }).then(r => {
+        axios.get(`/api/road/${this.quality[0]}/${this.quality[1]}`).then(r => {
           this.roads = r.data.roads
           this.roads_list = r.data.roads_list
           this.loadingQuality = false;
