@@ -56,7 +56,7 @@ SELECT
   json_build_object(
            'type', 'Feature',
            'geometry', st_asgeojson(st_makepoint(
-                  st_x(origin) + x * -8.986642677244117e-06,
+                  st_x(origin) + y * -8.986642677244117e-06,
                   st_y(origin) + y * -1.4655401709054041e-05)
            )::json,
            'properties', json_build_object(
@@ -67,6 +67,7 @@ SELECT
        ) as data
 FROM point_defects pd
 LEFT JOIN roads r on pd.road_id = r.id
+WHERE road_id = 25705
         """)
 
         out = []
@@ -74,7 +75,7 @@ LEFT JOIN roads r on pd.road_id = r.id
             out.append(i.data)
 
         return jsonify({
-            'objects': out
+            'defects': out
         })
 
 class NearestFrameView(MethodView):

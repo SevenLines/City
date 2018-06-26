@@ -10,9 +10,10 @@
         <div class="info">
           <div v-show="frameAddress">
             <h3>
-              <div class="address">{{frameAddress}}</div> &mdash; <div class="road-title">{{frameRoadTitle}}</div>
+              <div class="address">{{frameAddress}}</div> &mdash;
+              <div class="road-title">{{frameRoadTitle}}</div>
             </h3>
-              <img :src="frameUrl" alt="">
+            <img :src="frameUrl" alt="">
             <div style="padding-top: 0.5em">
               <strong>Оценка состояния дороги: {{frameScore}}</strong>
               <div><strong>Дефекты:</strong> {{frameDefects}}</div>
@@ -40,12 +41,15 @@
         roads: [],
         roads_list: {},
         roadsLayer: null,
+        pointsLayer: null,
+        pointsDefects: [],
         marker: null,
         popup: null,
         frameRoadTitle: '',
         frameUrl: '',
         frameScore: '',
         frameDefects: '',
+        frameAddress: '',
       }
     },
     watch: {
@@ -65,13 +69,26 @@
             polyline.addTo(this.roadsLayer)
           })
         }
+      },
+      pointsDefects () {
+        if (this.map) {
+          this.pointsLayer.clearLayers();
+          this.pointsDefects.forEach(geoObject => {
+            let marker = L.circleMarker(
+              [geoObject.geometry.coordinates[1],
+              geoObject.geometry.coordinates[0]]
+            );
+            marker.addTo(this.map)
+          })
+        }
       }
     },
     created() {
       axios.get('/api/road/').then(r => {
         this.roads = r.data.roads;
         this.roads_list = r.data.roads_list;
-      })
+      });
+      this.loadDefects();
     },
     mounted() {
       this.map = L.map(this.$refs.map).setView([52.27, 104.3], 13)
@@ -87,10 +104,17 @@
       this.marker.addTo(this.map);
 
       this.roadsLayer = L.layerGroup();
-      this.roadsLayer.addTo(this.map)
+      this.roadsLayer.addTo(this.map);
 
+      this.pointsLayer= L.layerGroup();
+      this.pointsLayer.addTo(this.map);
     },
     methods: {
+      loadDefects() {
+        axios.get("/api/point-defects/").then(r => {
+          this.pointsDefects = r.data.defects;
+        })
+      },
       onEachFeature(feature, layer) {
         let self = this;
         layer.on({
