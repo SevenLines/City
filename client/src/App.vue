@@ -1,6 +1,6 @@
 <template>
   <div style="height: 100%">
-    <div class="app-wrapper" :class="{'loading': loading}">
+    <div class="app-wrapper">
       <div id="app">
         <div id="map" ref="map"></div>
         <div id="toolbar">
@@ -28,7 +28,7 @@
             <div class="header">Слои дефектов</div>
 
             <div class="filter-list">
-              <div>Состояние покрытия (двигайте ползунок)</div>
+              <div>Состояние покрытия (двигайте ползунок, выбрано от <strong>{{quality[0]}}</strong> до <strong>{{quality[1]}}</strong>)</div>
               <el-slider
                 v-model="quality"
                 :step="0.1"
@@ -51,13 +51,15 @@
         </div>
       </div>
     </div>
-    <div id="loading-screen" v-if="loading">
+    <div class="loading-spinner" v-if="loading">
       <half-circle-spinner
         :animation-duration="1000"
         :size="60"
         color="#ff1d5e"
       />
-      <div class="message">Обновляю данные...</div>
+      <div class="message">
+      Обновляю данные
+      </div>
     </div>
   </div>
 </template>
@@ -110,7 +112,9 @@
             title: 'Отклонение верха головки рельса трамвайных или железнодорожных путей, расположенных в пределах проезжей части, относительно покрытия более 2,0 см.',
             value: false,
             color: '#2fcbc8'
-          }
+          },
+          {id: null},
+          {id: '6', title: 'Плохое состояние ограждений и бородюрного камня', value: false, color: '#cd00ff'},
         ]
       }
     },
@@ -119,12 +123,12 @@
       HalfCircleSpinner
     },
     computed: {
-        loading() {
-          return this.loadingDefects || this.loadingQuality
-        }
+      loading() {
+        return this.loadingDefects || this.loadingQuality
+      }
     },
     watch: {
-      quality () {
+      quality() {
         this.loadQuality()
       },
       roads() {
@@ -146,7 +150,7 @@
           this.pointsLayer.setZIndex(10)
         }
       },
-      pointsDefects () {
+      pointsDefects() {
         if (this.map) {
           this.pointsLayer.clearLayers();
           this.pointsDefects.forEach(geoObject => {
@@ -195,11 +199,11 @@
       this.roadsLayer = L.layerGroup();
       this.roadsLayer.addTo(this.map);
 
-      this.pointsLayer= L.layerGroup();
+      this.pointsLayer = L.layerGroup();
       this.pointsLayer.addTo(this.map);
     },
     methods: {
-      loadQuality: _.debounce(function() {
+      loadQuality: _.debounce(function () {
         this.loadingQuality = true;
         axios.get('/api/road/', {
           params: {
@@ -211,7 +215,7 @@
           this.loadingQuality = false;
         })
       }, 300),
-      loadDefects: _.debounce(function() {
+      loadDefects: _.debounce(function () {
         this.loadingDefects = true;
         axios.get('/api/point-defects/', {
           params: {
@@ -222,7 +226,7 @@
           this.loadingDefects = false;
         })
       }, 600),
-      onValueChanged () {
+      onValueChanged() {
         this.loadDefects()
       },
       onEachFeature(feature, layer) {
