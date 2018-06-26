@@ -1,0 +1,5 @@
+Flask-sqlalchemy
+Flask-Caching
+psycopg2
+fabric
+redis
