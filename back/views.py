@@ -12,8 +12,12 @@ class SendPhotoView(MethodView):
 
 
 class RoadView(MethodView):
-    @cache.cached(timeout=5000)
     def get(self, *args, **kwargs):
+        quality = list(map(str, map(float, request.args.getlist('quality[]'))))
+
+        if not quality:
+            quality = (1, 5)
+
         result = db.engine.execute('''
 SELECT 
   json_build_object(
@@ -33,9 +37,9 @@ FROM frames f
   LEFT JOIN video v ON v.id = f.video_id
   LEFT JOIN roads r ON r.id = v.road_id
   LEFT JOIN road_quality rq ON rq.road_id = v.road_id and f.l >= rq.start and f.l <= rq.end
-WHERE f2.idx is not NULL
+WHERE f2.idx is not NULL and LEAST(5, coalesce(score, 5)) between {} and {}
 GROUP BY LEAST(5, coalesce(score, 5)), defects, r.id, rq.start, rq.end, f.video_id, rq.id
-        ''')
+        '''.format(quality[0], quality[1]))
 
         roads_list = {i.id: i.title for i in Roads.query.all()}
 
@@ -51,28 +55,35 @@ GROUP BY LEAST(5, coalesce(score, 5)), defects, r.id, rq.start, rq.end, f.video_
 
 class PointDefectsView(MethodView):
     def get(self, *args, **kwargs):
-        result = db.engine.execute("""
-SELECT
-  json_build_object(
-           'type', 'Feature',
-           'geometry', st_asgeojson(st_makepoint(
-                  st_x(origin) + y * -8.986642677244117e-06,
-                  st_y(origin) + y * -1.4655401709054041e-05)
-           )::json,
-           'properties', json_build_object(
-               'defects', defects,
-               'road_id', road_id,
-               'type', pd."type"
-           )
-       ) as data
-FROM point_defects pd
-LEFT JOIN roads r on pd.road_id = r.id
-WHERE road_id = 25705
-        """)
+        types = list(map(str, map(int, request.args.getlist('filters[]'))))
 
         out = []
-        for i in result:
-            out.append(i.data)
+        if types:
+
+            query = """
+    SELECT
+      json_build_object(
+               'type', 'Feature',
+               'geometry', st_asgeojson(st_makepoint(
+                      52.28309999999998 + y * -8.986642677244117e-06,
+                      104.30060000000013 + x * -1.4655401709054041e-05
+                  )
+               )::json,
+               'properties', json_build_object(
+                   'road_id', road_id,
+                   'type', pd."type",
+                   'defects', pd.defect_types_id
+               )
+           ) as data
+    FROM point_defects pd
+    LEFT JOIN roads r on pd.road_id = r.id
+            """
+            query += " WHERE defect_types_id && ARRAY[{}]".format(",".join(types))
+
+            result = db.engine.execute(query)
+
+            for i in result:
+                out.append(i.data)
 
         return jsonify({
             'defects': out

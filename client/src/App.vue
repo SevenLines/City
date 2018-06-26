@@ -1,42 +1,82 @@
 <template>
-  <div class="app-wrapper">
-    <div id="app">
-      <div id="map" ref="map"></div>
-      <div id="toolbar">
-        <div class="header">
-          <img src="./assets/logo_2.png" alt="">
-          <div>Иркутск &mdash; диагностика 2018</div>
-        </div>
-        <div class="info">
-          <div v-show="frameAddress">
-            <h3>
-              <div class="address">{{frameAddress}}</div> &mdash;
-              <div class="road-title">{{frameRoadTitle}}</div>
-            </h3>
-            <img :src="frameUrl" alt="">
-            <div style="padding-top: 0.5em">
-              <strong>Оценка состояния дороги: {{frameScore}}</strong>
-              <div><strong>Дефекты:</strong> {{frameDefects}}</div>
+  <div style="height: 100%">
+    <div class="app-wrapper" :class="{'loading': loading}">
+      <div id="app">
+        <div id="map" ref="map"></div>
+        <div id="toolbar">
+          <div class="header">
+            <img src="./assets/logo_2.png" alt="">
+            <div>Иркутск &mdash; диагностика 2018</div>
+          </div>
+          <div class="info">
+            <div v-show="frameAddress">
+              <h3>
+                <div class="address">{{frameAddress}}</div> &mdash;
+                <div class="road-title">{{frameRoadTitle}}</div>
+              </h3>
+              <img :src="frameUrl" alt="">
+              <div style="padding-top: 0.5em">
+                <strong>Оценка состояния дороги: {{frameScore}}</strong>
+                <div><strong>Дефекты:</strong> {{frameDefects}}</div>
+              </div>
+            </div>
+            <div v-show="!frameAddress" style="padding-top: 1em">
+              Кликнете дорогу на карте, чтобы увидеть состояние дороги
             </div>
           </div>
-          <div v-show="!frameAddress" style="padding-top: 1em">
-            Кликнете дорогу на карте, чтобы увидеть сосотяние дороги
+          <div class="filter">
+            <div class="header">Слои дефектов</div>
+
+            <div class="filter-list">
+              <div>Состояние покрытия (двигайте ползунок)</div>
+              <el-slider
+                v-model="quality"
+                :step="0.1"
+                :min=1
+                :max=5
+                range
+                show-stops>
+              </el-slider>
+              <div v-for="f in filters">
+                <div v-if="f.id" class="filter-item">
+                  <div class="sample" :style="{'background-color': f.color}"></div>
+                  <filter-item class="checkbox" :data="f" @valueChanged="onValueChanged"/>
+                </div>
+                <div v-if="!f.id">
+                  <hr>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
     </div>
+    <div id="loading-screen" v-if="loading">
+      <half-circle-spinner
+        :animation-duration="1000"
+        :size="60"
+        color="#ff1d5e"
+      />
+      <div class="message">Обновляю данные...</div>
+    </div>
   </div>
 </template>
+
 
 <script>
   import L from 'leaflet'
   import axios from 'axios'
+  import _ from 'lodash'
   import tinycolor from 'tinycolor2'
+  import {HalfCircleSpinner} from 'epic-spinners'
+  import FilterItem from './Filter.vue'
 
   export default {
     name: 'app',
     data() {
       return {
+        loadingQuality: false,
+        loadingDefects: false,
         map: null,
         roads: [],
         roads_list: {},
@@ -50,9 +90,43 @@
         frameScore: '',
         frameDefects: '',
         frameAddress: '',
+        quality: [2, 5],
+
+        filters: [
+          {id: '1', title: 'Разрушение а/б около канализационного люка', value: false, color: '#ff0017'},
+          {id: '2', title: 'Выпирающий канализационный люк', value: false, color: '#ff8930'},
+          {id: '7', title: 'Отсутствующий канализационный люк', value: false, color: '#ffb42a'},
+          {id: '12', title: 'Продавленный канализационный люк', value: false, color: '#faff02'},
+          {id: null},
+          {
+            id: '4',
+            title: 'Разрушение ц/б плит на пересекаемых трамвайных (ж/д) путях',
+            value: false,
+            color: '#0069ff'
+          },
+          {id: '6', title: 'Разрушение а/б на пересекаемых трамвайных (ж/д) путях', value: false, color: '#2793bd'},
+          {
+            id: '10',
+            title: 'Отклонение верха головки рельса трамвайных или железнодорожных путей, расположенных в пределах проезжей части, относительно покрытия более 2,0 см.',
+            value: false,
+            color: '#2fcbc8'
+          }
+        ]
       }
     },
+    components: {
+      'filter-item': FilterItem,
+      HalfCircleSpinner
+    },
+    computed: {
+        loading() {
+          return this.loadingDefects || this.loadingQuality
+        }
+    },
     watch: {
+      quality () {
+        this.loadQuality()
+      },
       roads() {
         if (this.map) {
           this.roadsLayer.clearLayers();
@@ -68,27 +142,42 @@
             })
             polyline.addTo(this.roadsLayer)
           })
+          this.roadsLayer.setZIndex(20)
+          this.pointsLayer.setZIndex(10)
         }
       },
       pointsDefects () {
         if (this.map) {
           this.pointsLayer.clearLayers();
           this.pointsDefects.forEach(geoObject => {
+
+            let defect_id = geoObject.properties.defects[0]
+            let color = 'red'
+            this.filters.some(i => {
+              if (i.id == defect_id) {
+                color = i.color
+              }
+            })
+
             let marker = L.circleMarker(
-              [geoObject.geometry.coordinates[1],
-              geoObject.geometry.coordinates[0]]
+              geoObject.geometry.coordinates, {
+                radius: 5,
+                color: 'white',
+                fillColor: color,
+                fillOpacity: 1,
+                weight: 2
+              }
             );
-            marker.addTo(this.map)
+            marker.addTo(this.pointsLayer)
           })
+          this.roadsLayer.setZIndex(20)
+          this.pointsLayer.setZIndex(10)
         }
       }
     },
     created() {
-      axios.get('/api/road/').then(r => {
-        this.roads = r.data.roads;
-        this.roads_list = r.data.roads_list;
-      });
-      this.loadDefects();
+      this.loadQuality()
+      this.loadDefects()
     },
     mounted() {
       this.map = L.map(this.$refs.map).setView([52.27, 104.3], 13)
@@ -110,10 +199,31 @@
       this.pointsLayer.addTo(this.map);
     },
     methods: {
-      loadDefects() {
-        axios.get("/api/point-defects/").then(r => {
-          this.pointsDefects = r.data.defects;
+      loadQuality: _.debounce(function() {
+        this.loadingQuality = true;
+        axios.get('/api/road/', {
+          params: {
+            'quality': this.quality
+          }
+        }).then(r => {
+          this.roads = r.data.roads
+          this.roads_list = r.data.roads_list
+          this.loadingQuality = false;
         })
+      }, 300),
+      loadDefects: _.debounce(function() {
+        this.loadingDefects = true;
+        axios.get('/api/point-defects/', {
+          params: {
+            filters: this.filters.filter(i => i.value).map(i => i.id)
+          }
+        }).then(r => {
+          this.pointsDefects = r.data.defects;
+          this.loadingDefects = false;
+        })
+      }, 600),
+      onValueChanged () {
+        this.loadDefects()
       },
       onEachFeature(feature, layer) {
         let self = this;
@@ -151,83 +261,6 @@
   }
 </script>
 
-<style lang="scss">
-  @import "~leaflet/dist/leaflet.css";
 
-  body, html {
-    height: 100%;
-    padding: 0;
-    margin: 0;
-  }
-
-  .app-wrapper {
-    display: flex;
-    height: 100%;
-  }
-
-  #app {
-    width: 100%;
-    display: flex;
-    /*flex-direction: column;*/
-  }
-
-  #toolbar {
-    .header {
-      display: flex;
-      justify-content: flex-start;
-      align-items: center;
-      padding: 0.5em;
-      background: #5dc3f4;
-      box-shadow: 0 0 32px #55abd9 inset, 0 0 2px #97a6c0;
-      font-size: 2em;
-      img {
-        padding-right: 0.5em;
-      }
-      border-bottom: 1px solid #cccccc;
-    }
-    .info {
-      overflow: hidden;
-      padding: 1em;
-      .address {
-        $color: #0046ff;
-        display: inline-block;
-        background-color: $color;
-        padding: 0.25em 0.5em;
-        color: white;
-        border-radius: 0.5em;
-        box-shadow: 0 0 0 2px white, 0 0 0 4px $color;
-        margin-right: 4px;
-      }
-      .road-title {
-        display: inline-block;
-        max-width: 400px;
-        white-space: nowrap;
-        text-overflow: ellipsis;
-      }
-      img {
-        max-width: 100%;
-        box-shadow: 0 0 8px silver;
-      }
-
-    }
-    flex-basis: 600px;
-    box-shadow: 0 0 8px silver;
-
-    h2, h3 {
-      padding: 0;
-      margin: 0;
-    }
-    h3 {
-      margin-bottom: 1em;
-    }
-    border-bottom: 1px solid silver;
-  }
-
-  #map {
-    flex-grow: 1;
-  }
-
-  .leaflet-popup-content img {
-
-  }
+<style lang="scss" src="./app.scss">
 </style>
