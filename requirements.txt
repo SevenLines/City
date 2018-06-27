@@ -3,3 +3,5 @@ Flask-Caching
 psycopg2
 fabric
 redis
+simplejson
+python-rapidjson

@@ -1,8 +1,10 @@
+from rapidjson import dumps
+
 from flask import jsonify, request, send_from_directory
 from flask.views import MethodView
 from sqlalchemy import func, and_
 
-from back.base import db, cache
+from back.base import db, cache, app
 from back.models import Frames, RoadQuality, Roads
 
 @cache.memoize(5000)
@@ -44,13 +46,16 @@ class SendPhotoView(MethodView):
 
 class RoadView(MethodView):
     def get(self, qmin, qmax, *args, **kwargs):
-        roads_list = {i.id: i.title for i in Roads.query.all()}
+        roads_list = {str(i.id): i.title for i in Roads.query.all()}
         quality_info = get_quality_info(float(qmin), float(qmax))
 
-        return jsonify({
+        respons_content = dumps({
             'roads': quality_info,
             'roads_list': roads_list,
         })
+        response = app.response_class(respons_content, mimetype=app.config['JSONIFY_MIMETYPE'])
+
+        return response
 
 
 class PointDefectsView(MethodView):
