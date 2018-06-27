@@ -34,6 +34,7 @@
                 :step="0.1"
                 :min=1
                 :max=5
+                :disabled="loadingQuality"
                 range
                 show-stops>
               </el-slider>
