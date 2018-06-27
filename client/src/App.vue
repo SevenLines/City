@@ -113,8 +113,8 @@
             value: false,
             color: '#2fcbc8'
           },
-          {id: null},
-          {id: '6', title: 'Плохое состояние ограждений и бородюрного камня', value: false, color: '#cd00ff'},
+          // {id: null},
+          // {id: '6', title: 'Плохое состояние ограждений и бородюрного камня', value: false, color: '#cd00ff'},
         ]
       }
     },
