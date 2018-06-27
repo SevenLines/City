@@ -72,6 +72,7 @@ class PointDefectsView(MethodView):
                'properties', json_build_object(
                    'road_id', road_id,
                    'type', pd."type",
+                   'l', pd.address,
                    'defects', pd.defect_types_id
                )
            ) as data

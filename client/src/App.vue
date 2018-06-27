@@ -143,10 +143,10 @@
                 'weight': 10,
                 'opacity': 0.75
               }
-            })
+            });
             polyline.addTo(this.roadsLayer)
-          })
-          this.roadsLayer.setZIndex(20)
+          });
+          this.roadsLayer.setZIndex(20);
           this.pointsLayer.setZIndex(10)
         }
       },
@@ -155,13 +155,24 @@
           this.pointsLayer.clearLayers();
           this.pointsDefects.forEach(geoObject => {
 
-            let defect_id = geoObject.properties.defects[0]
-            let color = 'red'
+            let defect_id = geoObject.properties.defects[0];
+            let address = `${Math.floor(geoObject.properties.l / 1000)}+${geoObject.properties.l % 1000}`;
+            let road_title = this.roads_list[geoObject.properties.road_id];
+            let color = 'red';
             this.filters.some(i => {
               if (i.id == defect_id) {
                 color = i.color
               }
-            })
+            });
+
+            let defectsVerbose = this.filters.map(i => {
+              return {
+                id: parseInt(i.id),
+                title: i.title
+              }
+            }).filter(i => {
+              return geoObject.properties.defects.indexOf(i.id) > -1
+            }).map(i => i.title);
 
             let marker = L.circleMarker(
               geoObject.geometry.coordinates, {
@@ -172,15 +183,20 @@
                 weight: 2
               }
             );
+            marker.on('click', e => {
+              this.popup.setContent(`<h3>${road_title} &mdash; ${address}</h3>` + defectsVerbose.join("<br>"));
+              this.popup.setLatLng(e.latlng);
+              this.popup.openOn(this.map)
+            });
             marker.addTo(this.pointsLayer)
-          })
-          this.roadsLayer.setZIndex(20)
+          });
+          this.roadsLayer.setZIndex(20);
           this.pointsLayer.setZIndex(10)
         }
       }
     },
     created() {
-      this.loadQuality()
+      this.loadQuality();
       this.loadDefects()
     },
     mounted() {
@@ -190,7 +206,7 @@
       }).addTo(this.map);
 
       this.popup = L.popup({
-        minWidth: 500
+        minWidth: 300
       });
 
       this.marker = L.circleMarker([52.27, 104.3]);
