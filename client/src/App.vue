@@ -150,16 +150,25 @@
             });
             polyline.addTo(this.roadsLayer)
           });
-          this.roadsLayer.setZIndex(20);
-          this.pointsLayer.setZIndex(10)
+          this.reorder()
         }
       },
       multilineDefects () {
         if (this.multilineDefects) {
           this.multilineDefectsLayer.clearLayers();
           this.multilineDefects.forEach(geoObject => {
-            console.log(geoObject);
+            let color = geoObject.properties.type === 'Бортовой камень' ? '#003aff' : '#ff9c00'
+            let polyline = L.geoJSON(geoObject, {
+              style: {
+                'color': color,
+                'weight': 6,
+                'opacity': 0.75
+              }
+            })
+
+            polyline.addTo(this.multilineDefectsLayer)
           })
+          this.reorder()
         }
       },
       pointsDefects() {
@@ -202,16 +211,15 @@
             });
             marker.addTo(this.pointsLayer)
           });
-          this.roadsLayer.setZIndex(20);
-          this.pointsLayer.setZIndex(10)
+          this.reorder()
         }
       }
     },
     created() {
       this.loadQuality();
-      this.loadDefects();
-      this.loadBarriers();
+
     },
+
     mounted() {
       this.map = L.map(this.$refs.map).setView([52.27, 104.3], 13)
       L.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -241,6 +249,8 @@
           this.roads = r.data.roads
           this.roads_list = r.data.roads_list
           this.loadingQuality = false;
+          this.loadDefects()
+          this.loadBarriers()
         })
       }, 300),
       loadDefects: _.debounce(function () {
@@ -261,6 +271,11 @@
           this.loadingBarriers = false;
         })
       }, 500),
+      reorder () {
+        // this.roadsLayer.bringToFront()
+        // this.pointsLayer.bringToFront()
+        // this.multilineDefectsLayer.bringToFront()
+      },
       onValueChanged() {
         this.loadDefects()
       },

@@ -161,7 +161,7 @@ def load_point_defects():
 
 
 def load_multiline_defects():
-    files = glob.glob(r'd:\_MMK\_PYTHON\CityDiagnostics\out\json\ул. Байкальская, г. Иркутск.json')
+    files = glob.glob(r'd:\_MMK\_PYTHON\CityDiagnostics\out\json\*.json')
     for f in files:
         with open(f) as fl:
             data = json.loads(fl.read())
@@ -169,8 +169,8 @@ def load_multiline_defects():
             for q in data[road_id]['barrier']:
                 geom = 'LINESTRING({})'.format(
                     ",".join(["{} {}".format(
+                        104.30060000000013 + i[0] * -1.4655401709054041e-05,
                         52.28309999999998 + i[1] * -8.986642677244117e-06,
-                        104.30060000000013 + i[0] * -1.4655401709054041e-05
                     ) for i in q['points']])
                 )
                 pd = MultilineDefects(

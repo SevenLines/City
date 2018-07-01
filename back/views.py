@@ -121,8 +121,15 @@ class NearestFrameView(MethodView):
 class MultilineDefectsView(MethodView):
     def get(self):
         query = """
-SELECT st_asgeojson(geom) as geom  
+SELECT json_build_object(
+        'type', 'Feature',
+        'properties', json_build_object(
+          'type', "type"
+        ),
+    'geometry', st_asgeojson(geom)::json
+) as geom  
 FROM multiline_defects
+WHERE description = 'плохое'
         """
         result = db.engine.execute(query)
         out = []
