@@ -1,3 +1,5 @@
+from geoalchemy2 import Geometry
+
 from back.base import db
 
 
@@ -48,3 +50,11 @@ class PointDefects(db.Model):
     x = db.Column(db.Float)
     y = db.Column(db.Float)
     defects = db.Column(db.Text)
+
+
+class MultilineDefects(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    road_id = db.Column(db.Integer, db.ForeignKey('roads.id'), nullable=True)
+    type = db.Column(db.Text)
+    description = db.Column(db.Text)
+    geom = db.Column(Geometry)

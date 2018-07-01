@@ -7,7 +7,7 @@ from multiprocessing.pool import Pool
 from subprocess import call
 
 from back.base import db, app
-from back.models import Frames, Video, RoadQuality, PointDefects
+from back.models import Frames, Video, RoadQuality, PointDefects, MultilineDefects
 
 
 def create_frame(frame):
@@ -160,8 +160,31 @@ def load_point_defects():
         db.session.commit()
 
 
+def load_multiline_defects():
+    files = glob.glob(r'd:\_MMK\_PYTHON\CityDiagnostics\out\json\ул. Байкальская, г. Иркутск.json')
+    for f in files:
+        with open(f) as fl:
+            data = json.loads(fl.read())
+            road_id = list(data.keys())[0]
+            for q in data[road_id]['barrier']:
+                geom = 'LINESTRING({})'.format(
+                    ",".join(["{} {}".format(
+                        52.28309999999998 + i[1] * -8.986642677244117e-06,
+                        104.30060000000013 + i[0] * -1.4655401709054041e-05
+                    ) for i in q['points']])
+                )
+                pd = MultilineDefects(
+                    road_id=road_id,
+                    type=q['type'],
+                    description=q['condition'],
+                    geom=geom
+                )
+                db.session.add(pd)
+        db.session.commit()
+
+
 if __name__ == '__main__':
-    load_point_defects()
+    load_multiline_defects()
     # video_ids = fill_frames()
     # if video_ids:
     #     create_frames(video_ids)

@@ -118,6 +118,21 @@ class NearestFrameView(MethodView):
         })
 
 
+class MultilineDefectsView(MethodView):
+    def get(self):
+        query = """
+SELECT st_asgeojson(geom) as geom  
+FROM multiline_defects
+        """
+        result = db.engine.execute(query)
+        out = []
+        for i in result:
+            out.append(i.geom)
+
+        return jsonify({
+            'lines': out
+        })
+
 class QualityView(MethodView):
     def get(self):
         low = float(request.args.get('low', 0))

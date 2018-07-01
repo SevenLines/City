@@ -79,6 +79,7 @@
     data() {
       return {
         loadingQuality: false,
+        loadingBarriers: false,
         loadingDefects: false,
         map: null,
         roads: [],
@@ -86,6 +87,8 @@
         roadsLayer: null,
         pointsLayer: null,
         pointsDefects: [],
+        multilineDefectsLayer: null,
+        multilineDefects: [],
         marker: null,
         popup: null,
         frameRoadTitle: '',
@@ -125,7 +128,7 @@
     },
     computed: {
       loading() {
-        return this.loadingDefects || this.loadingQuality
+        return this.loadingDefects || this.loadingQuality || this.loadingBarriers
       }
     },
     watch: {
@@ -149,6 +152,14 @@
           });
           this.roadsLayer.setZIndex(20);
           this.pointsLayer.setZIndex(10)
+        }
+      },
+      multilineDefects () {
+        if (this.multilineDefects) {
+          this.multilineDefectsLayer.clearLayers();
+          this.multilineDefects.forEach(geoObject => {
+            console.log(geoObject);
+          })
         }
       },
       pointsDefects() {
@@ -198,7 +209,8 @@
     },
     created() {
       this.loadQuality();
-      this.loadDefects()
+      this.loadDefects();
+      this.loadBarriers();
     },
     mounted() {
       this.map = L.map(this.$refs.map).setView([52.27, 104.3], 13)
@@ -218,6 +230,9 @@
 
       this.pointsLayer = L.layerGroup();
       this.pointsLayer.addTo(this.map);
+
+      this.multilineDefectsLayer = L.layerGroup();
+      this.multilineDefectsLayer.addTo(this.map);
     },
     methods: {
       loadQuality: _.debounce(function () {
@@ -239,6 +254,13 @@
           this.loadingDefects = false;
         })
       }, 600),
+      loadBarriers: _.debounce(function () {
+        this.loadingBarriers = true;
+        axios.get('/api/multiline-defects/').then(r => {
+          this.multilineDefects = r.data.lines;
+          this.loadingBarriers = false;
+        })
+      }, 500),
       onValueChanged() {
         this.loadDefects()
       },

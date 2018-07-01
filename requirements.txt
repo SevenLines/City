@@ -5,3 +5,4 @@ fabric
 redis
 simplejson
 python-rapidjson
+GeoAlchemy2
