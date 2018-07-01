@@ -28,7 +28,11 @@
             <div class="header">Слои дефектов</div>
 
             <div class="filter-list">
-              <div>Состояние покрытия (двигайте ползунок, выбрано от <strong>{{quality[0]}}</strong> до <strong>{{quality[1]}}</strong>)</div>
+              <div>
+                <el-checkbox v-model="showQuality"></el-checkbox>
+                Состояние покрытия (двигайте ползунок, выбрано от <strong>{{quality[0]}}</strong> до <strong>{{quality[1]}}</strong>)
+              </div>
+
               <el-slider
                 v-model="quality"
                 :step="0.1"
@@ -47,6 +51,12 @@
                   <hr>
                 </div>
               </div>
+              <div>
+                <el-checkbox v-model="showBorder">Бордюры в неудов. состоянии</el-checkbox>
+              </div>
+              <div>
+                <el-checkbox v-model="showBarrier">Огражения в неудов. состоянии</el-checkbox>
+              </div>
             </div>
           </div>
         </div>
@@ -59,7 +69,7 @@
         color="#ff1d5e"
       />
       <div class="message">
-      Обновляю данные
+        Обновляю данные
       </div>
     </div>
   </div>
@@ -87,8 +97,12 @@
         roadsLayer: null,
         pointsLayer: null,
         pointsDefects: [],
+
         multilineDefectsLayer: null,
         multilineDefects: [],
+        borderLayer: null,
+        barrierLayer: null,
+
         marker: null,
         popup: null,
         frameRoadTitle: '',
@@ -97,6 +111,12 @@
         frameDefects: '',
         frameAddress: '',
         quality: [2, 5],
+
+        showQuality: true,
+        showBorder: true,
+        showBarrier: true,
+
+        filterBorder: false,
 
         filters: [
           {id: '1', title: 'Разрушение а/б около канализационного люка', value: false, color: '#ff0017'},
@@ -132,43 +152,72 @@
       }
     },
     watch: {
+      showQuality() {
+        let self = this;
+        if (this.showQuality) {
+          this.roadsLayer.addTo(this.map)
+        } else {
+          this.roadsLayer.remove()
+        }
+        this.loadBarriers()
+      },
+      showBorder() {
+        if (this.showBorder) {
+          this.borderLayer.addTo(this.map)
+        } else {
+          this.borderLayer.remove()
+        }
+      },
+      showBarrier() {
+        if (this.showBarrier) {
+          this.barrierLayer.addTo(this.map)
+        } else {
+          this.barrierLayer.remove()
+        }
+      },
       quality() {
         this.loadQuality()
       },
       roads() {
+        let self = this;
         if (this.map) {
           this.roadsLayer.clearLayers();
-          this.roads.forEach(geoObject => {
-            let k = 1 - (geoObject.properties.score - 2) / 3;
-            let polyline = L.geoJSON(geoObject, {
-              onEachFeature: this.onEachFeature.bind(this),
-              style: {
-                'color': tinycolor.mix('#00e14b', '#ff0071', k * 100).toString(),
-                'weight': 10,
-                'opacity': 0.75
-              }
-            });
-            polyline.addTo(this.roadsLayer)
+          _.chunk(this.roads, 10).forEach(roads => {
+            setTimeout(function () {
+              roads.forEach(geoObject => {
+                let k = 1 - (geoObject.properties.score - 2) / 3;
+                let polyline = L.geoJSON(geoObject, {
+                  onEachFeature: self.onEachFeature.bind(self),
+                  style: {
+                    'color': tinycolor.mix('#00e14b', '#ff0071', k * 100).toString(),
+                    'weight': 10,
+                    'opacity': 0.75
+                  }
+                });
+                polyline.addTo(self.roadsLayer)
+              })
+            }, 10)
           });
-          this.reorder()
+          // this.reorder()
         }
       },
-      multilineDefects () {
+      multilineDefects() {
+        let self = this;
         if (this.multilineDefects) {
           this.multilineDefectsLayer.clearLayers();
-          this.multilineDefects.forEach(geoObject => {
-            let color = geoObject.properties.type === 'Бортовой камень' ? '#003aff' : '#ff9c00'
-            let polyline = L.geoJSON(geoObject, {
-              style: {
-                'color': color,
-                'weight': 6,
-                'opacity': 0.75
-              }
-            })
+          _.chunk(self.multilineDefects, 10).forEach(multilineDefects => {
+            setTimeout(function () {
+              multilineDefects.forEach(geoObject => {
+                let color = geoObject.properties.type === 'Бортовой камень' ? '#003aff' : '#ff0021';
+                let layer = geoObject.properties.type === 'Бортовой камень' ? self.borderLayer : self.barrierLayer;
+                let polyline = L.polyline(geoObject.geometry.coordinates.map(i => [i[1], i[0]]), {
+                  'color': color,
+                });
 
-            polyline.addTo(this.multilineDefectsLayer)
+                polyline.addTo(layer)
+              });
+            }, 10);
           })
-          this.reorder()
         }
       },
       pointsDefects() {
@@ -211,7 +260,6 @@
             });
             marker.addTo(this.pointsLayer)
           });
-          this.reorder()
         }
       }
     },
@@ -221,7 +269,9 @@
     },
 
     mounted() {
-      this.map = L.map(this.$refs.map).setView([52.27, 104.3], 13)
+      this.map = L.map(this.$refs.map, {
+        renderer: L.canvas()
+      }).setView([52.27, 104.3], 13)
       L.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a>'
       }).addTo(this.map);
@@ -241,15 +291,20 @@
 
       this.multilineDefectsLayer = L.layerGroup();
       this.multilineDefectsLayer.addTo(this.map);
+
+      this.borderLayer = L.layerGroup();
+      this.borderLayer.addTo(this.map);
+      this.barrierLayer = L.layerGroup();
+      this.barrierLayer.addTo(this.map);
     },
     methods: {
       loadQuality: _.debounce(function () {
         this.loadingQuality = true;
         axios.get(`/api/road/${this.quality[0]}/${this.quality[1]}`).then(r => {
-          this.roads = r.data.roads
-          this.roads_list = r.data.roads_list
+          this.roads = r.data.roads;
+          this.roads_list = r.data.roads_list;
           this.loadingQuality = false;
-          this.loadDefects()
+          this.loadDefects();
           this.loadBarriers()
         })
       }, 300),
@@ -271,10 +326,11 @@
           this.loadingBarriers = false;
         })
       }, 500),
-      reorder () {
-        // this.roadsLayer.bringToFront()
-        // this.pointsLayer.bringToFront()
-        // this.multilineDefectsLayer.bringToFront()
+      reorder() {
+        this.multilineDefectsLayer.remove();
+        this.multilineDefectsLayer.addTo(this.map);
+        this.pointsLayer.remove();
+        this.pointsLayer.addTo(this.map);
       },
       onValueChanged() {
         this.loadDefects()
