@@ -14,6 +14,7 @@ else:
     cache = Cache(app, config={'CACHE_TYPE': 'redis', 'CACHE_REDIS_URL': '127.0.0.1:6379', })
 
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('SQLALCHEMY_DATABASE_URI', 'postgresql://postgres:123@localhost/irkutsk2018')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 cache.init_app(app)
