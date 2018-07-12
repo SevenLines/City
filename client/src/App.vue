@@ -245,7 +245,10 @@
             }).map(i => i.title);
 
             let marker = L.circleMarker(
-              geoObject.geometry.coordinates, {
+              [
+                geoObject.geometry.coordinates[1],
+                geoObject.geometry.coordinates[0],
+              ], {
                 radius: 5,
                 color: 'white',
                 fillColor: color,
@@ -271,7 +274,12 @@
     mounted() {
       this.map = L.map(this.$refs.map, {
         renderer: L.canvas()
-      }).setView([52.27, 104.3], 13)
+      }).setView([52.27, 104.3], 13);
+
+      this.map.on('mouseover', e => {
+        console.log(e);
+      });
+
       L.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a>'
       }).addTo(this.map);

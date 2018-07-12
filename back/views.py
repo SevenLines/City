@@ -69,11 +69,7 @@ class PointDefectsView(MethodView):
     SELECT
       json_build_object(
                'type', 'Feature',
-               'geometry', st_asgeojson(st_makepoint(
-                      52.28309999999998 + y * -8.986642677244117e-06,
-                      104.30060000000013 + x * -1.4655401709054041e-05
-                  )
-               )::json,
+               'geometry', st_asgeojson(pd.point)::json,
                'properties', json_build_object(
                    'road_id', road_id,
                    'type', pd."type",
@@ -105,7 +101,7 @@ class NearestFrameView(MethodView):
         if rq_id:
             rq = RoadQuality.query.filter_by(id=rq_id).first()
         frame = Frames.query.filter(Frames.video_id==video_id).order_by(
-            func.st_distance(Frames.point, func.st_makepoint(lng, lat))
+            func.st_distance(Frames.point, func.st_setsrid(func.st_makepoint(lng, lat), 4326))
         )
 
         frame = frame.first()
